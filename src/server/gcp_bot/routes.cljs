@@ -27,7 +27,7 @@
 (def DataDB (atom {
 :creds  {
                                     :projectId "cf-sandbox-sjolicoeur"
-                                    :keyFilename "CF-sandbox-sjolicoeur-74991780beb3.json"}
+                                    :keyFilename "creds.json"}
 }))
 
 (defn print-to-chat [message] 
@@ -42,7 +42,6 @@
   (let [
          private-key-name (str "id_rsa_" name)
          public-key-name (str private-key-name ".pub")
-         ;;cmd-code (str "ssh-keygen -t rsa -b 4096 -C 'pivotal@pivotal.io' -f " private-key-name " -N ''" )
          cmd-code (str "ssh-keygen -o -a 100 -t ed25519 -C 'pivotal@pivotal.io' -f " private-key-name " -N ''" )
          ]
     (.exec shelljs  cmd-code)

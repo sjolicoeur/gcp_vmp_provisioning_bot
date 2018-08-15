@@ -49,16 +49,21 @@ docker run -p 3000:3000 gcp_bot:latest
 ```
 
 [x] show ip,
-[ ] create more than one vm
-[ ] create vm on post only
+[x] create more than one vm
 [ ] queery all vms group by *-num and count nums
 [x] generate ssh certs on the fly and remove current one
-[ ] persist info in memory,
+[X] persist info in memory,
 [ ] allow deletion,
 [ ] ask for otp code, 
 [ ] allow slack integration
     [ ] create cmd with otp and name and qty
     [ ] delete group by name
-    [ ] show ip of given group
+    [ ] show ips of given group
     [ ] show cert of given group
+[x] put the script in a separte file and read it in
+[x] connect to slack
     
+# Requirements
+
+gcp credentials json file nam creds.json
+
