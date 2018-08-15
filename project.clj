@@ -12,6 +12,8 @@
                  [org.clojure/clojurescript "1.10.339"]
                  [org.clojure/core.async "0.4.474"]
                  [funcool/promesa "1.9.0"] 
+                 ;; [cljs-http "0.1.45"] ;; doesn't work with node
+                 [cljs-http-node "0.1.19-SNAPSHOT"]
                  ;; needed for JDK 9 compatibility
                  [javax.xml.bind/jaxb-api "2.3.0"]]
   :min-lein-version "2.0.0"
@@ -47,6 +49,7 @@
                                :npm-deps {
                                            "@google-cloud/compute" "0.10.0"
                                            "shelljs" "0.8.2"
+                                           "@slack/client" "4.3.1"
                                            }
 }}}}
      :figwheel
@@ -104,6 +107,8 @@
               ["npm" "install"]
               ["with-profile" "release" "npm" "init" "-y"]
               ["with-profile" "release" "cljsbuild" "once" "release"]
+;              ["cp" "Manifest" "target/release"]
+;              ["cp" "CF-sandbox-sjolicoeur-74991780beb3.json" "target/release"]
 ]
    "test" ["do"
            ["npm" "install"]

@@ -6,6 +6,7 @@
   "dependencies": {
     "@cljs-oss/module-deps": "^1.1.1",
     "@google-cloud/compute": "^0.10.0",
+    "@slack/client": "^4.3.1",
     "concat-stream": "1.6.2",
     "content-type": "1.0.4",
     "cookies": "0.7.1",
@@ -20,15 +21,8 @@
     "url": "0.11.0",
     "ws": "5.1.1"
   },
-  "main": "target/release/gcp_bot.js",
+  "main": "target/out/gcp_bot.js",
   "scripts": {
-    "start": "node target/release/gcp_bot.js"
-  },
-  "directories": {
-    "test": "test"
-  },
-  "devDependencies": {},
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+    "start": "node target/out/gcp_bot.js"
+  }
 }

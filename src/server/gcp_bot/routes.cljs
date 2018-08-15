@@ -9,12 +9,34 @@
     [promesa.async-cljs :refer-macros [async] :include-macros true]
     [shelljs :as shelljs]
     [macchiato.fs :as fs]
+    [macchiato.env :as config]
+    [macchiato.middleware.restful-format :as rf]
+    [cljs-http.client :as http]
+    ["@slack/client" :as slack-client]
+    [clojure.string :as string]
 )
   (:require-macros
     [hiccups.core :refer [html]]
     ;;[clojure.core.strint :as strint]
     ))
 
+(def https (js/require "https"))
+
+(def startup-script  (fs/slurp "scripts/start_up.sh"))
+
+(def DataDB (atom {
+:creds  {
+                                    :projectId "cf-sandbox-sjolicoeur"
+                                    :keyFilename "CF-sandbox-sjolicoeur-74991780beb3.json"}
+}))
+
+(defn print-to-chat [message] 
+(let [
+     token  "xoxb-2156835366-411371765601-HyDJfZPH2KjRjtYNdxPOKXUZ"
+      web  (slack-client/WebClient. token)
+      room-id (get-in @DataDB [:room-id])
+]
+  (.chat.postMessage web (clj->js {:channel room-id :text message :mrkdwn true})) ))
 
 (defn create-ssh-key [name]
   (let [
@@ -23,21 +45,18 @@
          ;;cmd-code (str "ssh-keygen -t rsa -b 4096 -C 'pivotal@pivotal.io' -f " private-key-name " -N ''" )
          cmd-code (str "ssh-keygen -o -a 100 -t ed25519 -C 'pivotal@pivotal.io' -f " private-key-name " -N ''" )
          ]
-    (println cmd-code)
     (.exec shelljs  cmd-code)
     (let [
            private-key (fs/slurp private-key-name)
            public-key (fs/slurp public-key-name)
            output {:private-key private-key :public-key public-key}
            ]
-      (println output)
       (.exec shelljs  (str "rm " private-key-name))
       (.exec shelljs  (str "rm " public-key-name))
       output
-      )
-  ))
+      ) ))
 
-(def  version "v52")
+  (def  version "v66")
 
 
 (defn get-ip  [data]
@@ -52,9 +71,7 @@
 
 (defn listVms [callback]
   (let [
-        compute (Compute (clj->js {
-                                    :projectId "cf-sandbox-sjolicoeur"
-                                    :keyFilename "/Users/sjolicoeur/Dev/gcp_bot/CF-sandbox-sjolicoeur-74991780beb3.json"}))
+        compute (Compute (clj->js (get-in @DataDB [:creds ] )))
         zone (.zone compute "us-central1-a")
         vm-operations (.getVMs zone)
        ]
@@ -63,7 +80,6 @@
          js/Promise.resolve
          (p/then
           (fn [data]
-            (println "-promise-data>" data (js->clj data))
             (let [vms     (first data)
                   results (map (fn [vm] (.getMetadata vm)) vms)]
 
@@ -78,7 +94,6 @@
                               firstr       (map (fn [data] (first data)) clj-resolved)
                               ips          (map
                                             (fn [data]
-                                              (println "processing -> " data)
                                               (get-ip data))
                                             firstr)]
 
@@ -86,34 +101,33 @@
                           ips))))))))
 ))
 
-;; TODO: put the script in a separte file and read it in
-;; TODO: connect to slack
-#_(defn create-ssh-key [name]
-  ;; ssh-keygen -t rsa -b 4096 -C "pivotal@pivotal.io" -f id_resa -N ''
-
-  )
-(defn vm-created-callback [err vm operation]
+(defn vm-created-callback [group-name err vm operation]
   ;;operation lets you check the status of long-running tasks.
   (.on operation "error" (fn [err] (println err)))
   (.on operation "running" (fn [metadata] (println "GOT ME SOME METADATA") (println metadata)))
   (.on operation "complete"
        (fn [metadata]
          ;; Virtual machine created!
-         (println " ----> VM CREATED")
-         (println (aget vm "name") (aget vm "id") (aget metadata "targetId"))
-         (println
            (.getMetadata vm
                          (fn [err data]
                            (let [cdata   (js->clj data)
                                  configs (first (get-in cdata ["networkInterfaces"]))
-                                 access  (first (get-in configs ["accessConfigs"]))]
-                             (println "public ip for this machine is" (get-in access ["natIP"])))))))))
+                                 access  (first (get-in configs ["accessConfigs"]))
+                                 ip (get-in access ["natIP"])
+                                 path-ips  [:vms (keyword group-name) :ip-list] 
+                                 ips (get-in @DataDB path-ips )
+                                 new-ips (conj ips ip)
+                                ]
+                             (print-to-chat (str "VM " (aget vm "name") " is up @" ip )) 
+                             (swap! DataDB assoc-in path-ips  new-ips )
+))))))
 
-(defn create-vm [name qty]
+
+(defn create-vm [name group-name  ssh-keys]
+ #_(println "THE GROUP NAME IS :: " group-name)
  (let [
-   compute (Compute (clj->js {:projectId "cf-sandbox-sjolicoeur" :keyFilename "/Users/sjolicoeur/Dev/gcp_bot/CF-sandbox-sjolicoeur-74991780beb3.json"}))
+   compute (Compute (clj->js (get-in @DataDB [:creds ] )))
    zone (.zone compute "us-central1-a")
-   ssh-keys (create-ssh-key name)
    VM (.createVM zone name (clj->js {
                                       :os "ubuntu"
                                       :http true
@@ -121,15 +135,7 @@
     :items [
       {
         :key "startup-script",
-        :value "#!/bin/bash
-# Install git
-echo \"performing apt update\"
-apt-get update
-echo \"performing install of coreutils and git\"
-apt-get --assume-yes install git  coreutils
-echo \"performing install of ag and stress\"
-apt-get --assume-yes install  stress  silversearcher-ag
-"
+        :value startup-script
       }
       {
         :key   "ssh-keys"
@@ -138,11 +144,24 @@ apt-get --assume-yes install  stress  silversearcher-ag
     ]
   }
 :networkInterfaces [ {:network "global/networks/default" } ]
- }) vm-created-callback)]))
+ }) (fn [err vm operation]  (vm-created-callback group-name err vm operation)))]))
+
+
+(defn create-vms [name-prefix qty] ;; pass callback to send out results
+ (let [names (for [i (take qty (range))] (str name-prefix "-" i))
+        ssh-keys (create-ssh-key name-prefix)
+        vms   (map (fn [vm-name] (create-vm vm-name name-prefix ssh-keys)) names)]
+   (print-to-chat (str "# Keys for VM in group " name-prefix ": \n private-key: ```" (:private-key ssh-keys) "``` \n # Publick key: ```" (:public-key ssh-keys) "```" ))
+
+  ;; store creds in db
+  (swap! DataDB assoc-in [:vms (keyword name-prefix)] {:creds ssh-keys :ip-list [] })
+  vms
+))
+
 
 (defn home [req res raise]
   (let [name (str "ubuntu-http-" version)
-        vm   (create-vm name 1)]
+        vm   (create-vms name 10)]
     (->
       (html
        [:html
@@ -160,10 +179,8 @@ apt-get --assume-yes install  stress  silversearcher-ag
 
 (defn  show-vm-list [req res raise]
  (p/alet [
-
         existing-vms (p/await (listVms "test"))
       ]
- (println "\n\n\n\n\n=========\n" existing-vms)
   (-> (html
         [:html
          [:head
@@ -182,6 +199,99 @@ apt-get --assume-yes install  stress  silversearcher-ag
       (r/content-type "text/html")
       (res))))
 
+(defn send-response-msg [room-id txt]
+  ;; Content-type: application/json
+  ;; Authorization: Bearer YOUR_BOTS_TOKEN
+ (let [
+        token  "xoxb-2156835366-411371765601-HyDJfZPH2KjRjtYNdxPOKXUZ"
+        web  (slack-client/WebClient. token)
+    ]
+
+     ;; provision qty name
+     (let [
+            txt-parts (string/split txt #" ")
+            [action qty-str group-name] txt-parts
+            qty (int qty-str)
+            ;; is-provisioning? (= "provision" (first txt-parts))
+             is-provisioning? (= "provision" action)
+          ]
+     (.chat.postMessage web (clj->js {:channel room-id :text (str txt " :: " is-provisioning? " -> " txt-parts)}))
+     (.chat.postMessage web (clj->js {:channel room-id :text (str "Provisionning group: " group-name " qty vms " qty )}))
+     )))
+
+(defmulti execute-action (fn [action action-args] action))
+
+(defmethod execute-action "echo" [action action-args]
+  (println (str "Pong: " action-args)))
+
+(defmethod execute-action "provision" [action action-args]
+  (let [
+        [qty-str group-name & extra-args] action-args
+        qty (int qty-str)
+        ]
+    (println (str "Gonna provision " qty " vm under the group: " group-name " extra args? " extra-args) )
+    #_(send-response-msg room-id text)
+    (p/alet [
+
+             vms (create-vms group-name qty)
+             ]
+            (println "created vms:: " vms)
+            #_(println " --- > " (get-in DataDB [:vms (keyword group-name)] ))
+            #_(.chat.postMessage web (clj->js {:channel room-id :text (str "creating the vms under: " group-name )}))   
+            )
+    ))
+
+(defmethod execute-action :default [action action-args]
+  (println "I do not understand")
+)
+
+
+(defmulti process-msg  (fn [body] (get-in body ["type"]) ))
+(defmethod process-msg "url_verification" [msg] 
+  (-> (get-in msg ["challenge"])
+     (r/ok)
+     (r/content-type "text/plain")
+  )
+)
+;; event_callback
+(defmethod process-msg "event_callback" [msg] 
+  (let [
+         text (get-in msg ["event" "text"])
+         room-id (get-in msg ["event" "channel"])
+         bot_id (get-in msg ["event" "bot-id"])
+         subtype-msg (get-in msg ["event" "subtype"])
+        ;; parse text here to do dispatch by action
+
+        [action & action-args] (string/split text #" ")
+        ]
+    (swap! DataDB assoc-in [:room-id] room-id)
+    (println "User asking for action : " action " with args: " action-args )
+    (execute-action action action-args)
+  #_(if (not= subtype-msg "bot_message") 
+  (send-response-msg room-id text))
+  (-> "Yay" ;; (get-in msg ["challenge"])
+     (r/ok)
+     (r/content-type "text/plain")
+  )
+))
+
+(defn  parse-events [req res raise]
+ (p/alet [
+
+        ;;existing-vms (p/await (listVms "test"))
+      ]
+ (let [
+        body (js->clj (:body req))
+       ;; parsed-body (js->clj (js/JSON.parse body) :keywordize-keys true )
+        msg-type (get-in body ["type"])
+      ]
+
+  (-> (process-msg body)
+      ;; (r/ok)
+      ;; (r/content-type "text/html")
+      (res))))
+)
+
 (defn not-found [req res raise]
   (-> (html
         [:html
@@ -193,8 +303,9 @@ apt-get --assume-yes install  stress  silversearcher-ag
 
 (def routes
   ["/" {"index.html" home
-        "list"  show-vm-list}]
-
+        "list"  show-vm-list
+        "slack/events" (rf/wrap-restful-format parse-events)
+}]
 )
 
 (defn router [req res raise]
