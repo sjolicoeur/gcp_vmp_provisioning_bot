@@ -24,15 +24,19 @@
 
 (def startup-script  (fs/slurp "scripts/start_up.sh"))
 
+(def slack-token  (clojure.string/replace (fs/slurp "slack_token.dat") #"\n" ""))
+
+#_(println (str "gnangna -> -> '" slack-token "'") )
+
 (def DataDB (atom {
-:creds  {
-                                    :projectId "cf-sandbox-sjolicoeur"
-                                    :keyFilename "creds.json"}
-}))
+                   :creds {
+                           :projectId   "cf-sandbox-sjolicoeur"
+                           :keyFilename "creds.json"}
+                   }))
 
 (defn print-to-chat [message] 
 (let [
-     token  "xoxb-2156835366-411371765601-HyDJfZPH2KjRjtYNdxPOKXUZ"
+     token  slack-token
       web  (slack-client/WebClient. token)
       room-id (get-in @DataDB [:room-id])
 ]
@@ -55,7 +59,7 @@
       output
       ) ))
 
-  (def  version "v66")
+  (def  version "v68")
 
 
 (defn get-ip  [data]
@@ -117,7 +121,7 @@
                                  ips (get-in @DataDB path-ips )
                                  new-ips (conj ips ip)
                                 ]
-                             (print-to-chat (str "VM " (aget vm "name") " is up @" ip )) 
+                             (print-to-chat (str "- VM " (aget vm "name") " `ssh -i id_rsa pivotal@" ip "`"))
                              (swap! DataDB assoc-in path-ips  new-ips )
 ))))))
 
@@ -202,7 +206,7 @@
   ;; Content-type: application/json
   ;; Authorization: Bearer YOUR_BOTS_TOKEN
  (let [
-        token  "xoxb-2156835366-411371765601-HyDJfZPH2KjRjtYNdxPOKXUZ"
+        token slack-token 
         web  (slack-client/WebClient. token)
     ]
 
