@@ -48,6 +48,29 @@ docker build -t gcp_bot:latest .
 docker run -p 3000:3000 gcp_bot:latest
 ```
 
+### Setup
+
+make sure you have:
+- creds.json -> put your google creds here
+- slack_token.dat -> put your slack token in here
+- scripts/start_up.sh -> script that will get executed at the start of your VM to install apps
+
+#### Deploying
+
+use the `release.sh` script to release to your cf account.
+
+### Issuing commands
+
+To provision VMs:
+`provision <number> <name with no spaces> <TOPT token>`
+
+You can validate your token via the auth command:
+`auth <TOPT token>`
+
+
+### TODO:
+
+
 [x] show ip,
 [x] create more than one vm
 [ ] queery all vms group by *-num and count nums

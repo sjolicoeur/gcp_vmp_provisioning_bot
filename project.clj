@@ -50,6 +50,8 @@
                                            "@google-cloud/compute" "0.10.0"
                                            "shelljs" "0.8.2"
                                            "@slack/client" "4.3.1"
+                                           "notp" "2.0.3"
+                                          "thirty-two" "1.0.2"
                                            }
 }}}}
      :figwheel
@@ -74,6 +76,9 @@
                       :npm-deps {
                                   "@google-cloud/compute" "0.10.0"
                                   "shelljs" "0.8.2"
+                                 "@slack/client" "4.3.1"
+                                 "notp" "2.0.3"
+                                 "thirty-two" "1.0.2"
                                   }}}}}
     :doo {:build "test"}
     :dependencies [[pjstadig/humane-test-output "0.8.3"]]}
@@ -95,6 +100,9 @@
                       :npm-deps {
                                   "@google-cloud/compute" "0.10.0"
                                   "shelljs" "0.8.2"
+                                 "@slack/client" "4.3.1"
+                                 "notp" "2.0.3"
+                                 "thirty-two" "1.0.2"
                                   }}}
       }}}}
   :aliases

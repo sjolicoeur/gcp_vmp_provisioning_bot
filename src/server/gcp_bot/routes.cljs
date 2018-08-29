@@ -2,6 +2,7 @@
   (:require
     [bidi.bidi :as bidi]
     [hiccups.runtime]
+    [macchiato.env :as config]
     [cljs.repl :refer [dir]]
     [macchiato.util.response :as r]
     ["@google-cloud/compute" :as Compute]
@@ -9,16 +10,44 @@
     [promesa.async-cljs :refer-macros [async] :include-macros true]
     [shelljs :as shelljs]
     [macchiato.fs :as fs]
-    [macchiato.env :as config]
     [macchiato.middleware.restful-format :as rf]
     [cljs-http.client :as http]
     ["@slack/client" :as slack-client]
     [clojure.string :as string]
+    [notp :as notp ]
+    ["thirty-two" :as base32]
 )
   (:require-macros
     [hiccups.core :refer [html]]
     ;;[clojure.core.strint :as strint]
     ))
+
+(println "THIS IS MY USER CONFIG :: ")
+(println (:gcp-auth-key (config/env) "PLEASE CONFIGURE THE 'GCP_AUTH_KEY' ENV VAR"))
+;; (println (:gcp-auth-key (config/env) (config/env)))
+
+(def secret-key (:gcp-auth-key (config/env)))
+
+;; validate token
+(defn validate-token [user-token]
+  (let [
+        token-is-valid?  (.totp.verify notp user-token secret-key)
+        ]
+    (if (nil? token-is-valid?) false true)
+    )
+  )
+
+(defn generate-topt-url []
+  (let [
+        encoded (.encode base32 secret-key)
+        encoded-for-google   (clojure.string/replace (.toString encoded) #"=" "")
+        uri (str "otpauth://totp/provisioning-bot?secret=" encoded-for-google)
+        ]
+    (println "this is the google string:: " uri)
+  )
+  )
+
+(generate-topt-url)
 
 (def https (js/require "https"))
 
@@ -26,21 +55,30 @@
 
 (def slack-token  (clojure.string/replace (fs/slurp "slack_token.dat") #"\n" ""))
 
-#_(println (str "gnangna -> -> '" slack-token "'") )
-
 (def DataDB (atom {
                    :creds {
                            :projectId   "cf-sandbox-sjolicoeur"
                            :keyFilename "creds.json"}
                    }))
 
-(defn print-to-chat [message] 
+(defn print-to-chat-room [message room-id]
+  (p/alet [
+        token  slack-token
+           web  (slack-client/WebClient. token)
+           payload (clj->js {:channel room-id :text message :mrkdwn true})
+        ]
+    (.chat.postMessage web payload)))
+
+
+(defn print-to-chat [message]
 (let [
      token  slack-token
       web  (slack-client/WebClient. token)
       room-id (get-in @DataDB [:room-id])
 ]
   (.chat.postMessage web (clj->js {:channel room-id :text message :mrkdwn true})) ))
+
+
 
 (defn create-ssh-key [name]
   (let [
@@ -117,17 +155,16 @@
                                  configs (first (get-in cdata ["networkInterfaces"]))
                                  access  (first (get-in configs ["accessConfigs"]))
                                  ip (get-in access ["natIP"])
-                                 path-ips  [:vms (keyword group-name) :ip-list] 
+                                 path-ips  [:vms (keyword group-name) :ip-list]
                                  ips (get-in @DataDB path-ips )
                                  new-ips (conj ips ip)
                                 ]
-                             (print-to-chat (str "- VM " (aget vm "name") " `ssh -i id_rsa pivotal@" ip "`"))
+                             (print-to-chat (str "- VM " (aget vm "name") " `ssh -i id_rsa pivotal@" ip "` "))
                              (swap! DataDB assoc-in path-ips  new-ips )
 ))))))
 
 
 (defn create-vm [name group-name  ssh-keys]
- #_(println "THE GROUP NAME IS :: " group-name)
  (let [
    compute (Compute (clj->js (get-in @DataDB [:creds ] )))
    zone (.zone compute "us-central1-a")
@@ -147,7 +184,9 @@
     ]
   }
 :networkInterfaces [ {:network "global/networks/default" } ]
- }) (fn [err vm operation]  (vm-created-callback group-name err vm operation)))]))
+                                     }) (fn [err vm operation]  (vm-created-callback group-name err vm operation)))]
+   VM
+   ))
 
 
 (defn create-vms [name-prefix qty] ;; pass callback to send out results
@@ -222,29 +261,40 @@
      (.chat.postMessage web (clj->js {:channel room-id :text (str "Provisionning group: " group-name " qty vms " qty )}))
      )))
 
-(defmulti execute-action (fn [action action-args] action))
+(defmulti execute-action (fn [action action-args room-id] action))
 
-(defmethod execute-action "echo" [action action-args]
+(defmethod execute-action "echo" [action action-args room-id]
   (println (str "Pong: " action-args)))
 
-(defmethod execute-action "provision" [action action-args]
+(defmethod execute-action "provision" [action action-args room-id]
   (let [
-        [qty-str group-name & extra-args] action-args
+        [qty-str group-name usr-auth-token & extra-args] action-args
         qty (int qty-str)
+        token-is-valid? (validate-token usr-auth-token)
         ]
     (println (str "Gonna provision " qty " vm under the group: " group-name " extra args? " extra-args) )
-    #_(send-response-msg room-id text)
-    (p/alet [
+    (if (false? token-is-valid?)
+      (print-to-chat-room "invalid auth will not provision" room-id)
+      (p/alet [
 
              vms (create-vms group-name qty)
              ]
             (println "created vms:: " vms)
-            #_(println " --- > " (get-in DataDB [:vms (keyword group-name)] ))
-            #_(.chat.postMessage web (clj->js {:channel room-id :text (str "creating the vms under: " group-name )}))   
-            )
+            ))
     ))
 
-(defmethod execute-action :default [action action-args]
+
+(defmethod execute-action "auth" [action action-args room-id]
+  (p/alet [
+        token-is-valid? (validate-token (first action-args))
+        res (str "the token value is: " token-is-valid?)
+        saved-room-id (get-in @DataDB [:room-id])
+        ]
+    (println res room-id saved-room-id) 
+    (print-to-chat-room res room-id)
+  )
+)
+(defmethod execute-action :default [action action-args room-id]
   (println "I do not understand")
 )
 
@@ -269,7 +319,7 @@
         ]
     (swap! DataDB assoc-in [:room-id] room-id)
     (println "User asking for action : " action " with args: " action-args )
-    (execute-action action action-args)
+    (execute-action action action-args room-id)
   #_(if (not= subtype-msg "bot_message") 
   (send-response-msg room-id text))
   (-> "Yay" ;; (get-in msg ["challenge"])
