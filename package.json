@@ -23,23 +23,8 @@
     "url": "0.11.0",
     "ws": "5.1.1"
   },
-  "main": "target/release/gcp_bot.js",
+  "main": "target/out/gcp_bot.js",
   "scripts": {
-    "start": "node target/release/gcp_bot.js"
-  },
-  "directories": {
-    "test": "test"
-  },
-  "devDependencies": {},
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sjolicoeur/gcp_vmp_provisioning_bot.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/sjolicoeur/gcp_vmp_provisioning_bot/issues"
-  },
-  "homepage": "https://github.com/sjolicoeur/gcp_vmp_provisioning_bot#readme"
+    "start": "node target/out/gcp_bot.js"
+  }
 }

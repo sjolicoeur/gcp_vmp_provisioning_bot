@@ -6,6 +6,12 @@
 
 ### running in development mode
 
+```
+export GCP_AUTH_KEY="some secret value for the totp"
+cp <gcp cred file> ./creds.json
+cp <slack token data file> ./slack_token.dat
+```
+
 run the following command in the terminal to install NPM modules and start Figwheel:
 
 ```
@@ -16,6 +22,8 @@ run `node` in another terminal:
 
 ```
 npm start
+# or
+GCP_AUTH_KEY="some secret value for the totp" npm start
 ```
 
 #### configuring the REPL
