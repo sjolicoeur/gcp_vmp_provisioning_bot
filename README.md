@@ -82,7 +82,7 @@ You can validate your token via the auth command:
 
 [x] show ip,
 [x] create more than one vm
-[ ] queery all vms group by *-num and count nums
+[ ] query all vms group by *-num and count nums
 [x] generate ssh certs on the fly and remove current one
 [X] persist info in memory,
 [ ] allow deletion,
@@ -94,7 +94,11 @@ You can validate your token via the auth command:
     [ ] show cert of given group
 [x] put the script in a separte file and read it in
 [x] connect to slack
-    
+[x] connect to Google Sheets
+[ ] pass channel into handler for async/sync niceness
+[ ] post into the Google Sheet
+[ ] connect Slack command to google sheet
+
 # Requirements
 
 gcp credentials json file nam creds.json

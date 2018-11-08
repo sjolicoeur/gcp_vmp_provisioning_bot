@@ -31,11 +31,9 @@
                                             (fn [err shit]
                                               (let [transformed-shit (js->clj shit.data.values)
                                                     string (sheet->string transformed-shit)]
-                                                (println "1 Error: ---> " err string)
                                                 (go (>! channel string)))))]
       (go
         (-> (<! channel)
             r/ok
-            (r/content-type "text/html")
+            (r/content-type "text/text")
             res)))))
-; (go (<! channel)))))
