@@ -8,6 +8,7 @@
 
 ```
 export GCP_AUTH_KEY="some secret value for the totp"
+export GOOGLE_API_KEY="your google API token"
 cp <gcp cred file> ./creds.json
 cp <slack token data file> ./slack_token.dat
 ```

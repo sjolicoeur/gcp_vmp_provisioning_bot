@@ -1,6 +1,7 @@
 (ns gcp-bot.handlers
 (:require
     [gcp-bot.database :refer [version]]
+    [gcp-bot.google-sheets :as google-sheets]
     [hiccups.runtime]
     [promesa.core :as p]
     [gcp-bot.bot-commands :as bot_cmds]
@@ -76,3 +77,6 @@
       (r/ok)
       (r/content-type "text/html")
       (res))))
+
+(defn show-shoutouts [req res raise]
+  (-> (google-sheets/get-document "1bI5PrMVTT4VbqpYxV2nTwo0H6C4RIGSvTh9ucEjjQHQ" res)))

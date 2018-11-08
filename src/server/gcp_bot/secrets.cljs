@@ -6,6 +6,7 @@
 ))
 
 (def secret-key (:gcp-auth-key (config/env)))
+(def google-api-key (:google-api-key (config/env)))
 
 (defn generate-topt-url []
   (let [
@@ -33,4 +34,4 @@
       (.exec shelljs  (str "rm " private-key-name))
       (.exec shelljs  (str "rm " public-key-name))
       output
-      ) ))
+      )))
