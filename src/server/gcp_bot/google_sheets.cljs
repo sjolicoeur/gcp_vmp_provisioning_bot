@@ -19,8 +19,9 @@
 (def result (atom {}))
 
 (defn sheet->string [rows]
-  (clojure.string/join "\n"
-                       (map (fn [row] (clojure.string/join "\t" row)) rows)))
+  (->> rows
+      (map (fn [row] (clojure.string/join "\t" row)))
+      (clojure.string/join "\n")))
 
 (defn get-document [id res]
   (go
