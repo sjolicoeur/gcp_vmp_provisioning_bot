@@ -29,9 +29,11 @@
           channel (chan)
           promise (.spreadsheets.values.get sheets (clj->js vars)
                                             (fn [err shit]
-                                              (let [transformed-shit (js->clj shit.data.values)
-                                                    string (sheet->string transformed-shit)]
-                                                (go (>! channel string)))))]
+                                              (if err
+                                                (go (>! channel err))
+                                                (let [transformed-shit (js->clj shit.data.values)
+                                                      string (sheet->string transformed-shit)]
+                                                  (go (>! channel string))))))]
       (go
         (-> (<! channel)
             r/ok
