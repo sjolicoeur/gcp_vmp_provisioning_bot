@@ -98,6 +98,8 @@ You can validate your token via the auth command:
 [ ] pass channel into handler for async/sync niceness
 [ ] post into the Google Sheet
 [ ] connect Slack command to google sheet
+[ ] create new sheet (automatically?)
+[ ] error handling
 
 # Requirements
 

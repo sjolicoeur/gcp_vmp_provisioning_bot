@@ -25,17 +25,19 @@
 
 (defn get-document [id res]
   (go
-    (let [vars {:spreadsheetId sheet-id :range "11/13!A1:E"}
-          channel (chan)
-          promise (.spreadsheets.values.get sheets (clj->js vars)
-                                            (fn [err shit]
-                                              (if err
-                                                (go (>! channel err))
-                                                (let [transformed-shit (js->clj shit.data.values)
-                                                      string (sheet->string transformed-shit)]
-                                                  (go (>! channel string))))))]
-      (go
-        (-> (<! channel)
-            r/ok
-            (r/content-type "text/text")
-            res)))))
+    (p/alet [channel (chan)
+             document (p/await (.spreadsheets.get sheets (clj->js {:spreadsheetId sheet-id})))
+             body (js->clj document)
+             sheet-title (get-in body ["data" "sheets" 0 "properties" "title"])
+             sheet (p/await (.spreadsheets.values.get sheets (clj->js {:spreadsheetId sheet-id :range sheet-title})
+                                                      (fn [err shit]
+                                                        (if err
+                                                          (go (>! channel err))
+                                                          (let [transformed-shit (js->clj shit.data.values)
+                                                                string (sheet->string transformed-shit)]
+                                                            (go (>! channel string)))))))]
+                            (go
+                              (-> (<! channel)
+                                  r/ok
+                                  (r/content-type "text/text")
+                                  res)))))
