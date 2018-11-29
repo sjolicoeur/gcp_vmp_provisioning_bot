@@ -14,8 +14,6 @@
 (def sheets (.sheets google (clj->js {:version "v4"
                          :auth google-api-key})))
 
-(def sheet-id "1bI5PrMVTT4VbqpYxV2nTwo0H6C4RIGSvTh9ucEjjQHQ") ;; shoutouts sheet
-; (def sheet-id "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms") ;; google's demo sheet
 (def result (atom {}))
 
 (defn sheet->string [rows]
@@ -23,7 +21,7 @@
       (map (fn [row] (clojure.string/join "\t" row)))
       (clojure.string/join "\n")))
 
-(defn get-document [id res]
+(defn get-document [sheet-id res]
   (go
     (p/alet [channel (chan)
              document (p/await (.spreadsheets.get sheets (clj->js {:spreadsheetId sheet-id})))
@@ -41,3 +39,8 @@
                                   r/ok
                                   (r/content-type "text/text")
                                   res)))))
+
+(defn post-to-document [sheet-id {name "name" message "message"} res]
+  (-> (str name " has a " message)
+      r/ok
+      res))

@@ -7,6 +7,7 @@
     [gcp-bot.bot-commands :as bot_cmds]
     [gcp-bot.gcp-helpers :as gcp-helpers]
     [macchiato.util.response :as r]
+    [macchiato.util.request :as request]
 )
 (:require-macros
     [hiccups.core :refer [html]]
@@ -78,5 +79,10 @@
       (r/content-type "text/html")
       (res))))
 
+(def sheet-id "1bI5PrMVTT4VbqpYxV2nTwo0H6C4RIGSvTh9ucEjjQHQ")
 (defn show-shoutouts [req res raise]
-  (-> (google-sheets/get-document "1bI5PrMVTT4VbqpYxV2nTwo0H6C4RIGSvTh9ucEjjQHQ" res)))
+  (-> (google-sheets/get-document sheet-id res)))
+
+(defn post-shoutout [req res raise]
+  (let [data (-> req :body)]
+    (-> (google-sheets/post-to-document sheet-id data res))))
