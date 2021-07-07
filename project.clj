@@ -11,7 +11,7 @@
                  [org.clojure/clojure "1.9.0"]
                  [org.clojure/clojurescript "1.10.339"]
                  [org.clojure/core.async "0.4.474"]
-                 [funcool/promesa "1.9.0"] 
+                 [funcool/promesa "1.9.0"]
                  ;; [cljs-http "0.1.45"] ;; doesn't work with node
                  [cljs-http-node "0.1.19-SNAPSHOT"]
                  ;; needed for JDK 9 compatibility
@@ -46,13 +46,12 @@
                                :source-map    true
                                :source-map-timestamp false
                                :install-deps  true
-                               :npm-deps {
-                                           "@google-cloud/compute" "0.10.0"
-                                           "shelljs" "0.8.2"
-                                           "@slack/client" "4.3.1"
-                                           "notp" "2.0.3"
+                               :npm-deps {"@google-cloud/compute" "0.10.0"
+                                          "shelljs" "0.8.2"
+                                          "@slack/client" "4.3.1"
+                                          "notp" "2.0.3"
                                           "thirty-two" "1.0.2"
-                                           }
+                                          "googleapis" "34.0.0"}
 }}}}
      :figwheel
      {:http-server-root "public"
@@ -73,13 +72,12 @@
                       :pretty-print  true
                       :source-map    true
                       :install-deps  true
-                      :npm-deps {
-                                  "@google-cloud/compute" "0.10.0"
-                                  "shelljs" "0.8.2"
+                      :npm-deps {"@google-cloud/compute" "0.10.0"
+                                 "shelljs" "0.8.2"
                                  "@slack/client" "4.3.1"
                                  "notp" "2.0.3"
                                  "thirty-two" "1.0.2"
-                                  }}}}}
+                                 "googleapis" "34.0.0"}}}}}
     :doo {:build "test"}
     :dependencies [[pjstadig/humane-test-output "0.8.3"]]}
    :release
@@ -97,13 +95,12 @@
 ;                      :optimizations :none
                       :pretty-print  false
                       :install-deps  true
-                      :npm-deps {
-                                  "@google-cloud/compute" "0.10.0"
-                                  "shelljs" "0.8.2"
+                      :npm-deps {"@google-cloud/compute" "0.10.0"
+                                 "shelljs" "0.8.2"
                                  "@slack/client" "4.3.1"
                                  "notp" "2.0.3"
                                  "thirty-two" "1.0.2"
-                                  }}}
+                                 "googleapis" "34.0.0"}}}
       }}}}
   :aliases
   {"build" ["do"

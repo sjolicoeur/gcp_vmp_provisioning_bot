@@ -16,3 +16,4 @@ pom.xml.asc
 /node_modules
 /*.json
 slack_token.dat
+.rebel_readline_history

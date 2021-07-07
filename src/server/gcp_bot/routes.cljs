@@ -17,6 +17,8 @@
 (def routes
   ["/" {"index.html" handlers/home
         "list"  handlers/show-vm-list
+        "shoutouts"  handlers/show-shoutouts
+        "new-shoutout" {:post (rf/wrap-restful-format handlers/post-shoutout)}
         "slack/events" (rf/wrap-restful-format handlers/parse-events) ;; needed by the slack api to send us data
 }]
 )
